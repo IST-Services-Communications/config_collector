@@ -38,6 +38,7 @@ import os
 import re
 import sys
 import warnings
+import urllib3
 from urllib.parse import quote, urlparse
 
 REQUIRED_DEPENDENCIES = ["requests", "cryptography"]
@@ -47,6 +48,7 @@ try:
 	from requests.exceptions import RequestException, SSLError
 	from cryptography.hazmat.primitives import serialization
 	from cryptography.hazmat.primitives.asymmetric import padding
+	from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 except ModuleNotFoundError as exc:
 	missing_module = exc.name or "unknown"
 	print(
@@ -144,22 +146,27 @@ def fetch_encryption_settings(session: requests.Session, protocol: str, host: st
 	return rsa_public_key, login_token, passw_encrypt_enable
 
 
-def load_rsa_public_key(rsa_public_key: str):
-	public_key_bytes = rsa_public_key.encode("utf-8")
-	try:
-		return serialization.load_pem_public_key(public_key_bytes)
-	except ValueError:
-		try:
-			wrapped = b"-----BEGIN PUBLIC KEY-----\n" + rsa_public_key.encode("utf-8") + b"\n-----END PUBLIC KEY-----\n"
-			return serialization.load_pem_public_key(wrapped)
-		except ValueError:
-			raise ValueError("Unable to parse RSA public key")
+def load_rsa_public_key(rsa_public_key: str) -> RSAPublicKey:
+    public_key_bytes = rsa_public_key.encode("utf-8")
+    try:
+        public_key = serialization.load_pem_public_key(public_key_bytes)
+    except ValueError:
+        try:
+            wrapped = b"-----BEGIN PUBLIC KEY-----\n" + rsa_public_key.encode("utf-8") + b"\n-----END PUBLIC KEY-----\n"
+            public_key = serialization.load_pem_public_key(wrapped)
+        except ValueError:
+            raise ValueError("Unable to parse RSA public key")
+
+    if not isinstance(public_key, RSAPublicKey):
+        raise ValueError("Loaded public key is not an RSA public key")
+
+    return public_key
 
 
 def encrypt_credentials(rsa_public_key: str, plaintext: bytes) -> str:
-	public_key = load_rsa_public_key(rsa_public_key)
-	encrypted = public_key.encrypt(plaintext, padding.PKCS1v15())
-	return encrypted.hex()
+    public_key = load_rsa_public_key(rsa_public_key)
+    encrypted = public_key.encrypt(plaintext, padding.PKCS1v15())
+    return encrypted.hex()
 
 
 def attempt_login(
@@ -258,7 +265,14 @@ def main() -> int:
 	verify = not args.allow_insecure
 
 	if not verify:
-		warnings.filterwarnings("ignore", category=requests.packages.urllib3.exceptions.InsecureRequestWarning)
+		try:
+			urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+		except AttributeError:
+			warnings.filterwarnings(
+       			"ignore",
+				message="Unverified HTTPS request",
+          		category=Warning,
+			)
 
 	session = requests.Session()
 	session.headers.update({"User-Agent": "python-requests/aruba-backup"})
@@ -329,6 +343,9 @@ def main() -> int:
 		print("Login failed for both HTTPS and HTTP.", file=sys.stderr)
 		return 1
 
+	assert used_protocol is not None, "Internal error: no protocol selected after successful login"
+	assert document_root is not None, "Internal error: document root not set after successful login"
+ 
 	if args.debug:
 		print("\nLOGIN SUCCESSFUL")
 	else:
