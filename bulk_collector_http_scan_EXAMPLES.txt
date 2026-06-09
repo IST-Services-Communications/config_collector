@@ -1,0 +1,37 @@
+Bulk collector scan example commands
+
+1) Single IP with default username/password
+python bulk_collector_http_scan.py --targets 10.1.1.245 --username admin --password Secret123 --download-root C:\Users\Jesse\test --log-dir C:\Users\Jesse\test\logs
+
+2) Comma-separated list of IPs
+python bulk_collector_http_scan.py --targets 10.1.1.245,10.1.1.246,10.1.1.247 --username admin --password Secret123 --download-root C:\Users\Jesse\test --log-dir C:\Users\Jesse\test\logs
+
+3) IP range
+python bulk_collector_http_scan.py --targets 10.1.1.245-10.1.1.250 --username admin --password Secret123 --download-root C:\Users\Jesse\test --log-dir C:\Users\Jesse\test\logs
+
+4) Single subnet
+python bulk_collector_http_scan.py --targets 10.1.1.0/29 --username admin --password Secret123 --download-root C:\Users\Jesse\test --log-dir C:\Users\Jesse\test\logs
+
+5) Range of subnets
+python bulk_collector_http_scan.py --targets 10.1.1.0/29-10.1.2.0/29 --username admin --password Secret123 --download-root C:\Users\Jesse\test --log-dir C:\Users\Jesse\test\logs
+
+6) Load targets from a file
+python bulk_collector_http_scan.py --targets 10.1.1.245 --targets-file bulk_collector_http_input.csv --username admin --password Secret123 --download-root C:\Users\Jesse\test --log-dir C:\Users\Jesse\test\logs
+
+7) Use per-host credentials from CSV
+python bulk_collector_http_scan.py --targets 10.1.1.245,10.1.1.246 --credentials-csv bulk_collector_http_input.csv --download-root C:\Users\Jesse\test --log-dir C:\Users\Jesse\test\logs
+
+8) Override ports with a single port value
+python bulk_collector_http_scan.py --targets 10.1.1.245 --port 8080 --username admin --password Secret123 --download-root C:\Users\Jesse\test --log-dir C:\Users\Jesse\test\logs
+
+9) Use custom HTTP and HTTPS ports
+python bulk_collector_http_scan.py --targets 10.1.1.245 --http-port 8080 --https-port 8443 --username admin --password Secret123 --download-root C:\Users\Jesse\test --log-dir C:\Users\Jesse\test\logs
+
+10) Force HTTP only
+python bulk_collector_http_scan.py --targets 10.1.1.245 --protocol http --username admin --password Secret123 --download-root C:\Users\Jesse\test --log-dir C:\Users\Jesse\test\logs
+
+11) Force HTTPS only with insecure TLS allowed
+python bulk_collector_http_scan.py --targets 10.1.1.245 --protocol https --allow-insecure --username admin --password Secret123 --download-root C:\Users\Jesse\test --log-dir C:\Users\Jesse\test\logs
+
+12) Combine target file with explicit ports and verbose logging
+python bulk_collector_http_scan.py --targets-file bulk_collector_http_input.csv --protocol any --http-port 8080 --https-port 8443 --allow-insecure --verbose --download-root C:\Users\Jesse\test --log-dir C:\Users\Jesse\test\logs
